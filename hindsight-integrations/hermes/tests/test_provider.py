@@ -81,6 +81,19 @@ def test_retain_tool_stores_content_with_per_call_tags(provider):
     instance.shutdown()
 
 
+def test_retain_tool_merges_explicit_metadata_with_provider_metadata(provider):
+    instance, fake = provider({})
+    instance.handle_tool_call(
+        "hindsight_retain",
+        {"content": "tenant canary", "metadata": {"memory_tenant_id": "cory"}},
+    )
+    item = _retain_item(fake)
+    assert item["metadata"]["memory_tenant_id"] == "cory"
+    assert "retained_at" in item["metadata"]
+    assert item["metadata"]["message_count"] == "1"
+    instance.shutdown()
+
+
 def test_tool_call_errors_are_reported_not_raised(provider):
     instance, _ = provider({})
     assert instance.handle_tool_call("hindsight_recall", {}).startswith("ERROR:")

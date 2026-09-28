@@ -1315,10 +1315,13 @@ class HindsightMemoryProvider(MemoryProvider):
         """Build one aretain_batch item. The server resolves occurred_start/end (incl.
         relative phrases in content) from the item timestamp: explicit occurred_at
         wins, else the configured event clock."""
+        merged_metadata = self._build_metadata(message_count=1, turn_index=self._turn_index)
+        if metadata:
+            merged_metadata.update({str(k): str(v) for k, v in metadata.items() if v is not None})
         item: Dict[str, Any] = {
             # See #93568.
             "content": content,
-            "metadata": metadata or self._build_metadata(message_count=1, turn_index=self._turn_index),
+            "metadata": merged_metadata,
             "timestamp": (occurred_at or "").strip() or _event_timestamp(),
         }
         merged_tags = _normalize_retain_tags(list(self._retain_tags) + _normalize_retain_tags(tags))
@@ -1455,7 +1458,8 @@ class HindsightMemoryProvider(MemoryProvider):
     def _tool_retain(self, args: dict) -> str:
         content, context = args["content"], args.get("context")
         item = self._build_retain_kwargs(
-            content, context=context, tags=args.get("tags"), occurred_at=args.get("occurred_at")
+            content, context=context, metadata=args.get("metadata"),
+            tags=args.get("tags"), occurred_at=args.get("occurred_at")
         )
         logger.debug("Tool hindsight_retain: bank=%s, content_len=%d, context=%s", self._bank_id, len(content), context)
         self._retain_batch(item, bank_id=self._bank_id)
