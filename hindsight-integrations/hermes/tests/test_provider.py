@@ -972,3 +972,15 @@ def test_an_async_turn_retain_is_resent_under_its_operation_id(provider):
     instance.sync_turn("one", "1")
     instance.shutdown()
     assert len(fake.retains) == 1 and fake.retains[0]["operation_id"]
+
+
+def test_retain_merges_generated_and_explicit_metadata(provider):
+    instance, fake = provider({})
+    instance.handle_tool_call("hindsight_retain", {"content": "metadata regression", "metadata": {"work_id": "TSK-MC-023-07", "message_count": 3, "ignored": None}})
+    item = fake.retains[0]
+    metadata = item["items"][0]["metadata"] if "items" in item else item["metadata"]
+    assert metadata["work_id"] == "TSK-MC-023-07"
+    assert metadata["message_count"] == "3"
+    assert "turn_index" in metadata
+    assert "retained_at" in metadata
+    assert "ignored" not in metadata
