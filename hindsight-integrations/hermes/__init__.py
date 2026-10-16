@@ -1718,7 +1718,8 @@ class HindsightMemoryProvider(MemoryProvider):
         item: Dict[str, Any] = {
             # See #93568.
             "content": content,
-            "metadata": metadata or self._build_metadata(message_count=1, turn_index=self._turn_index),
+            "metadata": {**self._build_metadata(message_count=1, turn_index=self._turn_index),
+                         **{str(k): str(v) for k, v in (metadata or {}).items() if v is not None}},
             "timestamp": (occurred_at or "").strip() or _event_timestamp(),
         }
         merged_tags = _normalize_string_list(list(self._retain_tags) + _normalize_string_list(tags))
@@ -1893,7 +1894,7 @@ class HindsightMemoryProvider(MemoryProvider):
     def _tool_retain(self, args: dict) -> str:
         content, context = args["content"], args.get("context")
         item = self._build_retain_kwargs(
-            content, context=context, tags=args.get("tags"), occurred_at=args.get("occurred_at")
+            content, context=context, metadata=args.get("metadata"), tags=args.get("tags"), occurred_at=args.get("occurred_at")
         )
 
         def _write(bank_id: str) -> None:
